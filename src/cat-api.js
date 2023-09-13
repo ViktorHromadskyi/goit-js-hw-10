@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const URL = 'https://api.thecatapi.com/v1/';
 const API_KEY =
-  'live_Utq0hlMivbHo39VL70zl84zHokxz90UZKgltekVoHuKpuxSnkDAmT7xUyS5OqyVj';
+  'live_CS15RxYB2h15oWnaJLfsTd7JJzGub9WGX5MRrNvHkIJ55oiBkfo2p7fxU3Dn11jL';
 axios.defaults.headers.common['x-api-key'] = API_KEY;
 
 function fetchBreeds() {
