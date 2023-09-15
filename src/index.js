@@ -1,94 +1,51 @@
+import ref from './js/references';
+import { fetchError } from './js/errorHandler';
+import './styles.css';
+import { fetchBreeds, fetchCatByBreed } from "./js/cat-api";
 import SlimSelect from 'slim-select';
 import 'slim-select/dist/slimselect.css';
-import { fetchBreeds, fetchCatByBreed } from './cat-api.js';
-import { Loading } from 'notiflix/build/notiflix-loading-aio';
-import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
-const refs = {
-  select: document.querySelector('.breed-select'),
-  loader: document.querySelector('.loader'),
-  err: document.querySelector('.error'),
-  catCard: document.querySelector('.cat-info'),
-};
+const { catSelector, catInfo, loaderText, errorText } = ref;
 
-refs.loader.style.display = 'none';
-refs.err.style.display = 'none';
-refs.select.style.display = 'none';
-refs.catCard.style.display = 'none';
+loaderText.classList.replace('loader', 'is-hidden');
+errorText.classList.add('is-hidden');
+catInfo.classList.add('is-hidden');
 
-Loading.dots({
-  svgColor: '#5897fb',
-  svgSize: '130px',
-  messageFontSize: '30px',
-});
-
+let arrBreedsId = [];
 fetchBreeds()
   .then(data => {
-    refs.select.style.display = 'flex';
-    refs.loader.style.display = 'none';
-
-    createMarkupOptins(data);
+    data.forEach(element => {
+      arrBreedsId.push({ text: element.name, value: element.id });
+    });
     new SlimSelect({
-      select: refs.select,
+      select: catSelector,
+      data: arrBreedsId,
     });
   })
-  .catch(err => {
-    Notify.failure(refs.err.textContent);
-  })
-  .finally(result => Loading.remove());
+  .catch(fetchError);
 
-function createMarkupOptins(arr) {
-  return arr
-    .map(({ id, name }) => {
-      console.log({ id, name });
+catSelector.addEventListener('change', selectBreed);
 
-      const option = `<option value=${id}>${name}</option>`;
-      refs.select.insertAdjacentHTML('beforeend', option);
+function selectBreed(event) {
+  loaderText.classList.replace('is-hidden', 'loader');
+  catSelector.classList.add('is-hidden');
+  catInfo.classList.add('is-hidden');
+
+  const breedId = event.currentTarget.value;
+  fetchCatByBreed(breedId)
+    .then(data => {
+      const { url, breeds } = data[0];
+
+      catInfo.innerHTML = `<div class="box-img">
+      <img src="${url}" alt="${breeds[0].name}" width="400"/></div>
+      <div class="box">
+      <h1>${breeds[0].name}</h1>
+      <p>${breeds[0].description}</p>
+      <p><b>Temperament:</b> ${breeds[0].temperament}</p></div>`;
+      catInfo.classList.remove('is-hidden');
+
+      loaderText.classList.replace('loader', 'is-hidden');
+      catSelector.classList.remove('is-hidden');
     })
-    .join('');
-}
-
-refs.select.addEventListener('change', e => {
-  const id = e.target.value;
-
-  Loading.dots({
-    svgColor: '#5897fb',
-    svgSize: '130px',
-    messageFontSize: '30px',
-  });
-
-  fetchCatByBreed(id)
-    .then(catInfo => {
-      refs.catCard.style.display = 'flex';
-      createMarkupCards(catInfo);
-    })
-    .catch(err => {
-      Notify.failure(refs.err.textContent);
-    })
-    .finally(result => Loading.remove());
-});
-
-function createMarkupCards(data) {
-  const {
-    breeds: { name, description, temperament },
-    url,
-  } = data;
-
-  const card = ` 
-      <img class="cat-img" src="${url}" alt="${name}"  >
-       <div class="cat-right">
-      <h1 class="name">${name}</h1>
-      <p class="description">${description}</p>
-      <p class="temperament"><span class="temperament-span">Temperament:</span> ${temperament}</p>    
-      </div>`;
-
-  // const card = `
-  //     <img class="cat-img" src="${data.url}" alt="${data.breeds[0].name}"  >
-  //      <div class="cat-right">
-  //     <h1 class="name">${data.breeds[0].name}</h1>
-  //     <p class="description">${data.breeds[0].description}</p>
-  //     <p class="temperament"><span class="temperament-span">Temperament:</span> ${data.breeds[0].temperament}</p>
-  //     </div>`;
-
-  refs.catCard.innerHTML = card;
+    .catch(fetchError);
 }
